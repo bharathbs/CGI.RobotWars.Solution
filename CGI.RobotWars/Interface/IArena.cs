@@ -2,6 +2,8 @@
 {
     public interface IArena
     {
-        void SetArena(int upperXCoordinate, int upperYCoordinate);
+        void SetArena(string upperXCoordinate, string upperYCoordinate);
+        void ValidateAndCreateRobotPosition(string s, string s1, string s2);
+        void MoveRobot(string s);
     }
 }

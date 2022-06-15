@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Linq;
 using CGI.RobotWars.Interface;
-using CommandLine;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CGI.RobotWars
 {
@@ -11,74 +10,42 @@ namespace CGI.RobotWars
         static void Main(string[] args)
         {
             var serviceProvider = new ServiceCollection()
-                .AddLogging()
-                .AddTransient<IMovementCommand, MovementCommand>()
-                .AddTransient<IOrientationCommand, OrientationCommand>()
+                .AddLogging(builder => builder.AddConsole())
+                .AddTransient<IRobotMovement, RobotMovement>()
+                .AddTransient<IRobotOrientation, RobotOrientation>()
                 .AddTransient<IArena, Arena>()
                 .AddTransient<IRobot, Robot>()
-                .AddSingleton<ILogger, Logger>()
                 .BuildServiceProvider();
+
+            IArena arena = serviceProvider.GetService<IArena>();
+
+            ILoggerFactory loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            ILogger<Program> logger = loggerFactory!.CreateLogger<Program>();
+            logger!.LogInformation($"Arguments : {string.Join(" ", args)}");
 
             for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
                 {
-                    case "ArenaConfiguration" 
+                    case "ArenaConfiguration":
+                        arena!.SetArena(args[i + 1], args[i + 2]);
+                        i += 2;
+                        break;
+                    case "RobotPosition":
+                        arena!.ValidateAndCreateRobotPosition(args[i + 1], args[i + 2], args[i + 3]);
+                        logger.LogInformation($"Robot : XCoordinate : {args[i + 1]}, YCoordinate : {args[i + 2]}, Direction : {args[i + 3]}");
+                        i += 3;
+                        break;
+                    case "Movement":
+                        arena!.MoveRobot(args[i + 1]);
+                        i += 1;
+                        break;
+                    default:
+                        logger.LogError( $"Invalid Arguments : {string.Join(" ", args)}");
+                        logger.LogError($"Arguments should be like 'ArenaConfiguration 'UpperXAxis' 'UpperYAxis' RobotPosition 'PositionX' 'PositionY' 'Direction' Movement 'MoveCommand'");
+                        throw new ArgumentException();
                 }
             }
-
-        }
-
-        private static void SetArena(ArenaConfiguration arenaConfiguration, ServiceProvider serviceProvider, out IArena arena)
-        {
-            if (arenaConfiguration.UpperXCoordinate?.Any() != true || arenaConfiguration.UpperYCoordinate?.Any() != true)
-            {
-                Console.WriteLine("Use ArenaConfiguration --UpperXCoordinate 'upperXCoordinate' --UpperYCoordinate 'upperYCoordinate'");
-                arena = null;
-                return;
-            }
-
-            arena = serviceProvider.GetService<IArena>();
-
-            if (arena != null)
-            {
-                arena.SetArena(Convert.ToInt32(arenaConfiguration.UpperXCoordinate), Convert.ToInt32(arenaConfiguration.UpperYCoordinate));
-            }
-        }
-
-
-        [Verb("RobotPosition", HelpText = "Position of Robot")]
-        public class RobotPosition
-        {
-            [Option("XCoordinate", Required = true)]
-            public string UpperXCoordinate { get; set; }
-
-            [Option("YCoordinate", Required = true)]
-            public string YCoordinate { get; set; }
-
-            [Option("Orientation", Required = true)]
-            public string Orientation { get; set; }
-        }
-
-
-        [Verb("ArenaConfiguration", HelpText = "Enter upper coordinates for Arena")]
-        public class ArenaConfiguration
-        {
-            [Option("UpperXCoordinate", Required = true)]
-            public string UpperXCoordinate { get; set; }
-
-            [Option("UpperYCoordinate", Required = true)]
-            public string UpperYCoordinate { get; set; }
-        }
-
-        [Verb("RobotMovementCommands", HelpText = "Movement instruction for Robot")]
-        public class RobotMovementCommands
-        {
-            [Option("UpperXCoordinate", Required = true)]
-            public string UpperXCoordinate { get; set; }
-
-            [Option("UpperYCoordinate", Required = true)]
-            public string UpperYCoordinate { get; set; }
         }
     }
 }

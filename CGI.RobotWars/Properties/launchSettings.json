@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CGI.RobotWars": {
+      "commandName": "Project",
+      "commandLineArgs": "ArenaConfiguration 5 5 RobotPosition 1 2 N Movement LMLMLMLMM RobotPosition 1 2 N Movement LMLMLMLMM"
+    }
+  }
+}

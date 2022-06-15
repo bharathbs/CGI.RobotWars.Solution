@@ -1,36 +1,62 @@
-﻿using CGI.RobotWars.Interface;
+﻿using System;
+using CGI.RobotWars.Domain;
+using CGI.RobotWars.Interface;
+using Microsoft.Extensions.Logging;
 
 namespace CGI.RobotWars
 {
     public class Robot : IRobot
     {
-        private IMovementCommand _movementCommand;
-        private IOrientationCommand _orientationCommand;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
-        public int XCoordinate { get; set; }
-        public int YCoordinate { get; set; }
-        public DirectionsEnum Direction { get; set; } 
-        public IArena Arena { get; set; }
+        private readonly IRobotMovement _robotMovement;
+        private readonly IRobotOrientation _robotOrientation;
 
+        public RobotModel RobotModel { get; set; }
 
-        public Robot(IMovementCommand movementCommand, IOrientationCommand orientationCommand, ILogger logger)
+        public Robot(ILoggerFactory logger, IRobotMovement robotMovement, IRobotOrientation robotOrientation)
         {
-            _movementCommand = movementCommand;
-            _orientationCommand = orientationCommand;
-            _logger = logger;
+            _logger = logger.CreateLogger<Robot>();
+            _robotMovement = robotMovement;
+            _robotOrientation = robotOrientation;
         }
 
-        public Robot CreateRobot(int xCoordinate, int yCoordinate, IArena arena, DirectionsEnum direction)
+        public void SetRobotCoordinate(string xCoordinate, string yCoordinate, DirectionsEnum direction, ArenaModel arena)
         {
-            XCoordinate = xCoordinate;
-            YCoordinate = yCoordinate;
-            Direction = direction;
-            Arena = arena;
+            RobotModel = new RobotModel
+            {
+                XCoordinate = Convert.ToInt32(xCoordinate),
+                YCoordinate = Convert.ToInt32(yCoordinate),
+                Direction = direction,
+                Arena = arena
+            };
 
-            return this;
+            _logger.LogDebug($"SetRobotCoordinate : XCoordinate : {xCoordinate}, YCoordinate : {yCoordinate}, Direction : {direction}");
         }
 
+        public void Move(string moveCommand)
+        {
+            foreach (char c in moveCommand)
+            {
+                switch (c)
+                {
+                    case 'M':
+                        _robotMovement.Move(RobotModel);
+                        break;
+                    case 'L':
+                        _robotOrientation.SpinLeft(RobotModel);
+                        break;
+                    case 'R':
+                        _robotOrientation.SpinRight(RobotModel);
+                        break;
+                    default:
+                        _logger.LogError($"Invalid Arguments : {c}");
+                        _logger.LogError($"Arguments can be of type 'M', 'L', 'R'");
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
 
+            _logger.LogInformation($"Final Point {RobotModel.XCoordinate}:{RobotModel.YCoordinate} {RobotModel.Direction:G}");
+        }
     }
 }
